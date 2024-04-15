@@ -6,16 +6,33 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from scipy.io.wavfile import write
 from dotenv import load_dotenv
 from openai import OpenAI
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 
 load_dotenv()
 openai_api_key=os.getenv("OPENAI_API_KEY")
 client=OpenAI()
 
+llm=ChatOpenAI()
+prompt=ChatPromptTemplate.from_messages([
+    ("system", "Respond conversationally to the given input, in whatever language it is given in"),
+    ("user", "{input}")
+])
+output_parser=StrOutputParser()
+chain=prompt|llm|output_parser
+
+translator=ChatPromptTemplate.from_messages([
+    ("system", "Translate this to the ISO language specified at the end in parentheses"),
+    ("user", "{input}")
+])
+translate=translator|llm|output_parser
+
 device="cuda:0" if torch.cuda.is_available() else "cpu"
 torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
 model_id="openai/whisper-base"
 model=AutoModelForSpeechSeq2Seq.from_pretrained(
-    model_id, torch_dtype=torch_dtype,
+    model_id,torch_dtype=torch_dtype,
     use_safetensors=True
 )
 model.to(device)
@@ -37,13 +54,13 @@ pygame.init()
 def recordaudio(filename,duration=5,fs=44100):
     print('recording...')
     recording=sd.rec(int(duration*fs),samplerate=fs,channels=1)
-    sd.wait() #wait for recording to finish
-    print('done waiting')
-    write(filename,fs,recording) #wave WAV file
-    print('written to file')
-    result=pipe(filename,generate_kwargs={'language':'en'})
-    print(f'finished recording, file saved as {filename}')
-    print(result['text'])
+    sd.wait()
+    #print('done waiting')
+    write(filename,fs,recording)
+    #print('written to file')
+    result=pipe(filename,generate_kwargs={'language':lang})
+    #print(f'finished recording, file saved as {filename}')
+    #print(result['text'])
     return result['text']
 
 def play_audio(file):
@@ -71,15 +88,23 @@ def translate_to_english(file):
     print(translation.text)
     return translation.text
 
+def native(lang,text):
+    trans=translate.invoke({'input':text+' (language:'+lang+')'})
+    print(trans)
+    return trans
+
 def generate_response(text):
-    pass
+    generation=chain.invoke({'input':text})
+    print(generation)
+    return generation
 
 def machine_turn(text):
     machine_file='recordings/machine.wav'
     if text=='':
         talk='Hello, how are you today?'
+        talk=native(lang,talk)
     else:
-        talk=generate_response()
+        talk=generate_response(text)
     make_speech_file(machine_file,talk)
     play_audio(machine_file)
     print('M: '+talk)
@@ -88,17 +113,18 @@ def human_turn():
     file='recordings/human.wav'
     talk=recordaudio(file)
     #talk=translate_to_english(file)
-    print(talk)
+    print('H: '+talk)
     return talk
 
 def conversation():
     human_response=''
     x=0
-    while x!=1:
+    while x!=5:
         machine_turn(human_response)
         human_response=human_turn()
         x+=1
     pygame.quit()
 
 #begin
+lang='hi'
 conversation()
