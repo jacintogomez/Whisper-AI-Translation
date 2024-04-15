@@ -6,10 +6,10 @@ import os
 
 load_dotenv()
 openai_api_key=os.getenv("OPENAI_API_KEY")
-client = OpenAI()
+client=OpenAI()
 
-audio_file= open("recordings/segment.mp3", "rb")
-translation = client.audio.translations.create(
+audio_file=open("recordings/segment.mp3", "rb")
+translation=client.audio.translations.create(
     model="whisper-1",
     file=audio_file
 )
