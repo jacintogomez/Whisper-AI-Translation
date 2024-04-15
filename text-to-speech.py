@@ -13,7 +13,7 @@ speech_file_path = "recordings/span.mp3"
 response = client.audio.speech.create(
     model="tts-1",
     voice="alloy",
-    input="我不说英语，你呢？"
+    input="¿hola, cómo estás?"
 )
 
 with open(speech_file_path, "wb") as f:

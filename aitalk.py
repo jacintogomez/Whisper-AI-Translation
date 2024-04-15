@@ -1,8 +1,6 @@
 import pygame
 import torch
-import accelerate
 import sounddevice as sd
-import ffmpeg
 import os
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from scipy.io.wavfile import write
@@ -46,6 +44,7 @@ def recordaudio(filename,duration=5,fs=44100):
     result=pipe(filename,generate_kwargs={'language':'en'})
     print(f'finished recording, file saved as {filename}')
     print(result['text'])
+    return result['text']
 
 def play_audio(file):
     sound=pygame.mixer.Sound(file)
@@ -53,8 +52,7 @@ def play_audio(file):
     sound.play()
     pygame.time.wait(recordlength)
 
-def make_speech_file(text):
-    speech_file_path='recordings/machine.wav'
+def make_speech_file(speech_file_path,text):
     response=client.audio.speech.create(
         model="tts-1",
         voice="alloy",
@@ -71,22 +69,25 @@ def translate_to_english(file):
         file=audio_file
     )
     print(translation.text)
+    return translation.text
+
+def generate_response(text):
+    pass
 
 def machine_turn(text):
     machine_file='recordings/machine.wav'
     if text=='':
         talk='Hello, how are you today?'
-    # else:
-    #     talk=generate_response()
-    make_speech_file(talk)
+    else:
+        talk=generate_response()
+    make_speech_file(machine_file,talk)
     play_audio(machine_file)
-    print(talk)
-    return talk
+    print('M: '+talk)
 
 def human_turn():
     file='recordings/human.wav'
-    recordaudio(file)
-    talk=translate_to_english(file)
+    talk=recordaudio(file)
+    #talk=translate_to_english(file)
     print(talk)
     return talk
 
@@ -96,4 +97,8 @@ def conversation():
     while x!=1:
         machine_turn(human_response)
         human_response=human_turn()
-        x=1
+        x+=1
+    pygame.quit()
+
+#begin
+conversation()

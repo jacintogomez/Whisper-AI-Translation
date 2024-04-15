@@ -5,5 +5,6 @@ pygame.init()
 sound=pygame.mixer.Sound('recordings/span.mp3')
 sound.play()
 
-pygame.time.wait(5000)
+delay=int(sound.get_length()*1000)
+pygame.time.wait(delay)
 pygame.quit()
