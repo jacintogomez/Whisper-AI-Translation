@@ -51,8 +51,7 @@ def recordaudio(filename,duration=5,fs=44100):
     sd.wait()
     write(filename,fs,recording)
     result=pipe(filename,generate_kwargs={'language':lang})
-    eng=pipe(filename,generate_kwargs={'language':'en'})
-    return [result['text'],eng['text']]
+    return result['text']
 
 def play_audio(file):
     sound=pygame.mixer.Sound(file)
@@ -71,13 +70,14 @@ def make_speech_file(speech_file_path,text):
     #print("Speech file saved successfully!")
 
 def translate_to_english(file):
-    audio_file=open(file, "rb")
-    translation=client.audio.translations.create(
-        model="whisper-1",
-        file=audio_file
-    )
-    #print(translation.text)
-    return translation.text
+    # audio_file=open(file, "rb")
+    # translation=client.audio.translations.create(
+    #     model="whisper-1",
+    #     file=audio_file
+    # )
+    # #print(translation.text)
+    result=pipe(file,generate_kwargs={'language':'en'})
+    return result['text']
 
 def nativize(lang,text):
     translator=ChatPromptTemplate.from_messages([
@@ -91,7 +91,7 @@ def nativize(lang,text):
 
 def generate_response(text):
     generation=chain.invoke({'input':text})
-    print(generation)
+    #print(generation)
     return generation
 
 def machine_turn(text):
@@ -108,9 +108,8 @@ def machine_turn(text):
 
 def human_turn():
     file='recordings/human.wav'
-    result=recordaudio(file)
-    talk=result[0]
-    eng=result[1]
+    talk=recordaudio(file)
+    eng=translate_to_english(file)
     print('Me: '+talk+' ('+eng+')')
     return talk
 
@@ -124,5 +123,5 @@ def conversation():
     pygame.quit()
 
 #begin
-lang='es'
+lang='ko'
 conversation()
